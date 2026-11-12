@@ -1,4 +1,4 @@
-"""Estimate the rotation of a UUSEC puzzle from reference images."""
+"""根据参考图库识别 UUSEC 旋转验证码的角度。"""
 
 import base64
 import glob
@@ -39,11 +39,11 @@ for filename in sorted(glob.glob(os.path.join(REF_DIR, "*.png"))):
         ).ravel()[MASK_BOOL.ravel()]
     REFERENCES.append({"name": name, "rotated": rotated})
 
-print(f"Loaded {len(REFERENCES)} reference images at 360 angles each.")
+print(f"已加载 {len(REFERENCES)} 张参考图，每张预生成 360 个角度。")
 
 
 def match_angle(target_image):
-    """Search coarsely, then refine the best nearby angles."""
+    """先每隔 3 度粗搜索，再在最佳角度附近逐度细查。"""
     target = np.array(target_image.convert("L"), dtype=np.float32).ravel()[MASK_BOOL.ravel()]
     target = target - target.mean()
     target_norm = np.linalg.norm(target)
@@ -82,7 +82,7 @@ api_data = {}
 
 
 def on_response(response):
-    """Collect the puzzle token and image from page responses."""
+    """从页面响应中收集验证码 token 和图片。"""
     if "/captcha/info" in response.url and response.status == 200:
         try:
             api_data["token"] = response.json()["msg"]
@@ -106,11 +106,11 @@ if not image_bytes:
     encoded = page.evaluate("document.getElementById('captchaImage').toDataURL('image/png')")
     image_bytes = base64.b64decode(encoded.split(",")[1])
 
-print(f"Token: {token}")
+print(f"Token：{token}")
 result = match_angle(Image.open(io.BytesIO(image_bytes)).convert("RGBA"))
-print(f"Image: {result['name']}")
-print(f"Angle: {result['angle']} degrees")
-print(f"Correlation: {result['correlation']:.4f}")
+print(f"参考图：{result['name']}")
+print(f"旋转角度：{result['angle']} 度")
+print(f"相关系数：{result['correlation']:.4f}")
 
 response = page.evaluate(
     f"""
@@ -120,8 +120,8 @@ response = page.evaluate(
     }})()
     """
 )
-print(f"Verification response: {response}")
-print("Success." if response.get("code") == 0 else "Verification failed.")
+print(f"验证响应：{response}")
+print("验证成功。" if response.get("code") == 0 else "验证失败。")
 
 browser.close()
 playwright.stop()
